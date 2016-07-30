@@ -1,0 +1,14 @@
+{
+  "name": "sonoba",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron-prebuilt": "^1.2.0"
+  },
+  "dependencies": {},
+  "author": "",
+  "license": "ISC"
+}
