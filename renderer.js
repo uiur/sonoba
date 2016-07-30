@@ -6,10 +6,13 @@ const extend = require('xtend')
 const getPort = require('get-port')
 const EventEmitter = require('events')
 const SignalServer = require('./signal-server')
+const fullname = require('fullname')
 
 const bonjour = require('bonjour')()
 const id = require('cuid')()
 const defaultPeerOptions = { config: { iceServers: [] } }
+
+const me = {}
 
 class Swarm extends EventEmitter {
   constructor () {
@@ -69,6 +72,13 @@ const swarm = new Swarm()
 const React = require('react')
 const ReactDOM = require('react-dom')
 
+function say (message) {
+  message.time = Number(new Date())
+  message.user = me.name
+
+  swarm.broadcast(message)
+}
+
 class Log extends React.Component {
   constructor (props) {
     super(props)
@@ -84,8 +94,6 @@ class Log extends React.Component {
   }
 
   append (message) {
-    message.time = Number(new Date())
-
     const { messages } = this.state
     messages.push(message)
     this.setState({ messages: messages })
@@ -94,9 +102,9 @@ class Log extends React.Component {
   render () {
     return React.DOM.div({}, [
       React.DOM.ul({}, this.state.messages.map(message => {
-        return React.DOM.li({ key: message.time }, message.body)
+        return React.DOM.li({ key: message.time }, message.user + ': ' + message.body)
       })),
-      React.DOM.div({}, [
+      React.DOM.div({},
         React.DOM.input({
           type: 'text',
           value: this.state.input,
@@ -104,19 +112,21 @@ class Log extends React.Component {
           onKeyDown: e => {
             if (e.key === 'Enter') {
               const message = { body: e.target.value }
-              swarm.broadcast(message)
+              say(message)
               this.append(message)
 
               this.setState({ input: '' })
             }
           }
         })
-      ])
+      )
     ])
   }
 }
 
-getPort().then(port => {
+Promise.all([getPort(), fullname()]).then(([port, name]) => {
+  me.name = name
+
   const browser = bonjour.find({ type: 'http' })
   browser.on('up', service => {
     if ((/sonoba-/).test(service.name) && service.host !== id) {
