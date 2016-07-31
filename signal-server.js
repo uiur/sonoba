@@ -15,6 +15,7 @@ class SignalServer extends EventEmitter {
       res.send()
     })
 
+    server.get('/', (req, res) => res.send('yo'))
     server.listen(port, () => this.emit('listen'))
   }
 }

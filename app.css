@@ -1,0 +1,23 @@
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+.message-form-container {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+}
+
+.message-form {
+  width: 100%;
+  display: inline-block;
+  font-size: 24px;
+  border-radius: 4px;
+  border: solid 2px #ccc;
+  outline: none;
+}
