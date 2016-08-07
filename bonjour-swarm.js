@@ -64,9 +64,6 @@ class Swarm extends EventEmitter {
 
     p.on('signal', (data) => {
       request.post(`${baseUrl}/signal/${this.id}`, data)
-        .then(response => {
-          console.log(response)
-        })
     })
 
     p.on('connect', () => {

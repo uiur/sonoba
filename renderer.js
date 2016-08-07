@@ -4,6 +4,13 @@ const linkText = require('link-text')
 const defaultUserName = require('./user-name')
 const Swarm = require('./bonjour-swarm')
 
+const fs = require('fs')
+const path = require('path')
+const logPath = path.join(__dirname, 'log')
+const log = fs.createWriteStream(logPath, { flags: 'a' })
+const concat = require('concat-stream')
+const JSONStream = require('JSONStream')
+
 const swarm = new Swarm()
 const React = require('react')
 const ReactDOM = require('react-dom')
@@ -47,6 +54,12 @@ class Log extends React.Component {
   }
 
   componentDidMount () {
+    fs.createReadStream(logPath)
+      .pipe(JSONStream.parse())
+      .pipe(concat(data => {
+        this.setState({ messages: data })
+      }))
+
     swarm.on('message', message => {
       console.log(message)
       this.append(message)
@@ -64,6 +77,8 @@ class Log extends React.Component {
   append (message) {
     const { messages } = this.state
     messages.push(message)
+    log.write(JSON.stringify(message) + '\n')
+
     this.setState({ messages: messages }, () => {
       this.messagesElement.scrollTop = this.messagesElement.scrollHeight
     })
