@@ -12,7 +12,7 @@ const me = {
   email: require('git-user-email')()
 }
 
-me.icon_url = require('gravatar').url(me.email, { protocol: 'https' })
+me.icon_url = require('gravatar').url(me.email, { protocol: 'https', size: 100 })
 
 // the message format is almost same as Slack
 // {
@@ -23,7 +23,7 @@ me.icon_url = require('gravatar').url(me.email, { protocol: 'https' })
 //   ts: '1358878755'
 // }
 function say (message) {
-  message.ts = Number(new Date())
+  message.ts = Date.now()
   message.user = me.id
   message.username = me.name
   message.icon_url = me.icon_url
@@ -54,7 +54,7 @@ class Log extends React.Component {
 
     swarm.on('connect', peerId => {
       this.append({
-        ts: Number(new Date()),
+        ts: Date.now(),
         username: 'sonoba',
         text: `${peerId} joined`
       })
@@ -64,21 +64,37 @@ class Log extends React.Component {
   append (message) {
     const { messages } = this.state
     messages.push(message)
-    this.setState({ messages: messages })
+    this.setState({ messages: messages }, () => {
+      this.messagesElement.scrollTop = this.messagesElement.scrollHeight
+    })
   }
 
   render () {
     return React.DOM.div({}, [
-      React.DOM.ul({ className: 'messages', key: 'log' }, this.state.messages.map(message => {
+      React.DOM.ul({
+        className: 'messages',
+        key: 'log',
+        ref: element => {
+          this.messagesElement = element
+        }
+      }, this.state.messages.map(message => {
         return React.DOM.li({
           className: 'message',
           key: message.ts
         }, [
-          React.DOM.img({ className: 'message-icon', src: message.icon_url }),
-          React.DOM.div({ className: 'message-username' }, message.username),
+          React.DOM.img({
+            className: 'message-icon',
+            src: message.icon_url,
+            key: 'icon'
+          }),
+          React.DOM.div({
+            className: 'message-username',
+            key: 'username'
+          }, message.username),
           React.DOM.div({
             className: 'message-text',
-            dangerouslySetInnerHTML: { __html: linkText(message.text, { target: '_blank' }) }
+            dangerouslySetInnerHTML: { __html: linkText(message.text, { target: '_blank' }) },
+            key: 'text'
           })
         ])
       })),
