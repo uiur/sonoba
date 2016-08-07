@@ -1,10 +1,15 @@
 const electron = require('electron')
 const app = electron.app
 const BrowserWindow = electron.BrowserWindow
+const menu = require('./menu')
+
+require('electron-context-menu')()
 
 let mainWindow
 
 function createWindow () {
+  electron.Menu.setApplicationMenu(menu)
+
   mainWindow = new BrowserWindow({width: 800, height: 600})
 
   mainWindow.loadURL(`file://${__dirname}/index.html`)
