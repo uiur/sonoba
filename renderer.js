@@ -8,11 +8,15 @@ const bonjour = require('bonjour')()
 const defaultUserName = require('./user-name')
 const Swarm = require('./swarm')
 
-const me = {}
-
 const swarm = new Swarm()
 const React = require('react')
 const ReactDOM = require('react-dom')
+
+const me = {
+  email: require('git-user-email')()
+}
+
+me.icon_url = require('gravatar').url(me.email, { protocol: 'https' })
 
 // the message format is almost same as Slack
 // {
@@ -26,6 +30,7 @@ function say (message) {
   message.ts = Number(new Date())
   message.user = me.id
   message.username = me.name
+  message.icon_url = me.icon_url
 
   swarm.broadcast(message)
 }
@@ -55,19 +60,22 @@ class Log extends React.Component {
 
   render () {
     return React.DOM.div({}, [
-      React.DOM.ul({ key: 'log' }, this.state.messages.map(message => {
-        let body =
-          message.username
-          ? message.username + ': ' + message.text
-          : message.text
-
-        return React.DOM.li({ key: message.ts }, body)
+      React.DOM.ul({ className: 'messages', key: 'log' }, this.state.messages.map(message => {
+        return React.DOM.li({
+          className: 'message',
+          key: message.ts
+        }, [
+          React.DOM.img({ className: 'message-icon', src: message.icon_url }),
+          React.DOM.div({ className: 'message-username' }, message.username),
+          React.DOM.div({ className: 'message-text' }, message.text)
+        ])
       })),
       React.DOM.div({ className: 'message-form-container', key: 'form' },
         React.DOM.input({
           className: 'message-form',
           type: 'text',
           value: this.state.input,
+          autoFocus: true,
           onChange: e => this.setState({ input: e.target.value }),
           onKeyPress: e => {
             if (e.target.value.length === 0) return

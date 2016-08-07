@@ -1,5 +1,6 @@
 html {
   box-sizing: border-box;
+  font-family: 'Helvetica Neue', Helvetica, Arial, 'Hiragino Kaku Gothic Pro', Meiryo, 'MS PGothic', sans-serif;
 }
 
 *, *:before, *:after {
@@ -20,4 +21,33 @@ html {
   border-radius: 4px;
   border: solid 2px #ccc;
   outline: none;
+}
+
+.messages {
+  list-style: none;
+}
+
+.message {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.message-username {
+  position: absolute;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.message-icon {
+  display: 'inline-block';
+  width: 36px;
+  height: 36px;
+  border-radius: 3px;
+  margin-right: 10px;
+}
+
+.message-text {
+  display: inline-block;
+  font-size: 14px;
 }
