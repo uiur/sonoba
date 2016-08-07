@@ -14,6 +14,7 @@ const JSONStream = require('JSONStream')
 const swarm = new Swarm()
 const React = require('react')
 const ReactDOM = require('react-dom')
+const wifiName = require('wifi-name')
 
 const logPath = path.join(electron.remote.app.getPath('userData'), 'log')
 const log = fs.createWriteStream(logPath, { flags: 'a' })
@@ -61,8 +62,11 @@ class Log extends React.Component {
       .pipe(JSONStream.parse())
       .pipe(concat(data => {
         this.setState({ messages: data })
+        this.setupSwarm()
       }))
+  }
 
+  setupSwarm () {
     swarm.on('message', message => {
       console.log(message)
       this.append(message)
@@ -70,14 +74,20 @@ class Log extends React.Component {
 
     swarm.on('connect', peerId => {
       this.append({
-        ts: Date.now(),
         username: 'sonoba',
         text: `${peerId} joined`
       })
     })
+
+    this.append({
+      username: 'sonoba',
+      text: `network: ${me.wifiName}`
+    })
   }
 
   append (message) {
+    message.ts = message.ts || Date.now()
+
     const { messages } = this.state
     messages.push(message)
     log.write(JSON.stringify(message) + '\n')
@@ -140,9 +150,10 @@ class Log extends React.Component {
   }
 }
 
-defaultUserName().then(name => {
-  me.name = name
+Promise.all([defaultUserName(), wifiName()]).then(([username, wifi]) => {
+  me.name = username
   me.id = swarm.id
+  me.wifiName = wifi
 
   ReactDOM.render(
     React.createFactory(Log)(),

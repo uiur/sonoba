@@ -32,6 +32,7 @@
     "react-dom": "^15.3.0",
     "simple-peer": "^6.0.4",
     "username": "^2.2.2",
+    "wifi-name": "^2.0.1",
     "xtend": "^4.0.1"
   },
   "author": "",
