@@ -4,7 +4,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "pkg": "electron-packager ./ --out build --platform darwin --arch x64 --overwrite --prune"
+    "pkg": "electron-packager ./ --out build --platform darwin --arch x64 --overwrite --prune",
+    "test": "standard"
   },
   "devDependencies": {
     "electron-packager": "^7.3.0",
