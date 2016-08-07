@@ -1,89 +1,31 @@
 'use strict'
 
-const Peer = require('simple-peer')
-const request = require('axios')
-const extend = require('xtend')
 const getPort = require('get-port')
-const EventEmitter = require('events')
 const SignalServer = require('./signal-server')
 
-const ip = require('ip')
 const bonjour = require('bonjour')()
-const id = require('cuid')()
-const defaultPeerOptions = { config: { iceServers: [] } }
 
 const defaultUserName = require('./user-name')
+const Swarm = require('./swarm')
 
 const me = {}
-
-class Swarm extends EventEmitter {
-  constructor () {
-    super()
-    this.peers = {}
-    this.signalBuffer = {}
-  }
-
-  addPeer (service) {
-    let peerOptions = defaultPeerOptions
-    if (service.host < id) {
-      peerOptions = extend(defaultPeerOptions, { initiator: true })
-    }
-
-    const peerHost = service.addresses.find(ip.isV4Format)
-    const baseUrl = `http://${peerHost}:${service.port}`
-    let p = this.peers[service.host] = new Peer(peerOptions)
-
-    p.on('signal', (data) => {
-      request.post(`${baseUrl}/signal/${id}`, data)
-        .then(response => {
-          console.log(response)
-        })
-    })
-
-    p.on('connect', () => {
-      console.log(`connect: ${service.host}`)
-      p.connected = true
-      this.emit('connect', service.host)
-    })
-
-    if (this.signalBuffer[service.host]) {
-      this.signalBuffer[service.host].forEach(signal => p.signal(signal))
-      delete this.signalBuffer[service.host]
-    }
-
-    p.on('data', data => {
-      let message
-      try {
-        message = JSON.parse(data.toString())
-      } catch (e) {
-      }
-
-      this.emit('message', message)
-    })
-
-    p.on('close', () => {
-      console.log('connection closed: ' + service.host)
-      delete this.peers[service.host]
-    })
-  }
-
-  broadcast (message) {
-    Object.keys(this.peers).forEach(host => {
-      let peer = this.peers[host]
-      if (peer.connected) {
-        peer.send(JSON.stringify(message))
-      }
-    })
-  }
-}
 
 const swarm = new Swarm()
 const React = require('react')
 const ReactDOM = require('react-dom')
 
+// the message format is almost same as Slack
+// {
+//   user: 'cuid',
+//   username: 'Kazato Sugimoto',
+//   icon_url: 'https://hoge.com/foo.png',
+//   text: 'hello!',
+//   ts: '1358878755'
+// }
 function say (message) {
-  message.time = Number(new Date())
-  message.user = me.name
+  message.ts = Number(new Date())
+  message.user = me.id
+  message.username = me.name
 
   swarm.broadcast(message)
 }
@@ -101,7 +43,7 @@ class Log extends React.Component {
     })
 
     swarm.on('connect', peerId => {
-      this.append({ time: Number(new Date()), body: `${peerId} joined` })
+      this.append({ ts: Number(new Date()), text: `${peerId} joined` })
     })
   }
 
@@ -115,11 +57,11 @@ class Log extends React.Component {
     return React.DOM.div({}, [
       React.DOM.ul({ key: 'log' }, this.state.messages.map(message => {
         let body =
-          message.user
-          ? message.user + ': ' + message.body
-          : message.body
+          message.username
+          ? message.username + ': ' + message.text
+          : message.text
 
-        return React.DOM.li({ key: message.time }, body)
+        return React.DOM.li({ key: message.ts }, body)
       })),
       React.DOM.div({ className: 'message-form-container', key: 'form' },
         React.DOM.input({
@@ -131,7 +73,7 @@ class Log extends React.Component {
             if (e.target.value.length === 0) return
 
             if (e.key === 'Enter') {
-              const message = { body: e.target.value }
+              const message = { text: e.target.value }
               say(message)
               this.append(message)
 
@@ -146,10 +88,11 @@ class Log extends React.Component {
 
 Promise.all([getPort(), defaultUserName()]).then(([port, name]) => {
   me.name = name
+  me.id = swarm.id
 
   const signalServer = new SignalServer({ port: port })
   signalServer.on('listen', () => {
-    bonjour.publish({ name: 'sonoba-' + id, type: 'http', port: port, host: id })
+    bonjour.publish({ name: `sonoba-${me.id}`, type: 'http', port: port, host: me.id })
   }).on('signal', (signal, host) => {
     if (swarm.peers[host]) {
       swarm.peers[host].signal(signal)
@@ -161,7 +104,7 @@ Promise.all([getPort(), defaultUserName()]).then(([port, name]) => {
 
   const browser = bonjour.find({ type: 'http' })
   browser.on('up', service => {
-    if ((/sonoba-/).test(service.name) && service.host !== id) {
+    if ((/sonoba-/).test(service.name) && service.host !== me.id) {
       console.log('found host:', service)
       swarm.addPeer(service)
     }
