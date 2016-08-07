@@ -6,12 +6,13 @@ const extend = require('xtend')
 const getPort = require('get-port')
 const EventEmitter = require('events')
 const SignalServer = require('./signal-server')
-const fullname = require('fullname')
 
 const ip = require('ip')
 const bonjour = require('bonjour')()
 const id = require('cuid')()
 const defaultPeerOptions = { config: { iceServers: [] } }
+
+const defaultUserName = require('./user-name')
 
 const me = {}
 
@@ -143,7 +144,7 @@ class Log extends React.Component {
   }
 }
 
-Promise.all([getPort(), fullname()]).then(([port, name]) => {
+Promise.all([getPort(), defaultUserName()]).then(([port, name]) => {
   me.name = name
 
   const signalServer = new SignalServer({ port: port })
