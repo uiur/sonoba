@@ -1,3 +1,8 @@
+const getPort = require('get-port')
+const SignalServer = require('./signal-server')
+
+const bonjour = require('bonjour')()
+
 const Peer = require('simple-peer')
 const request = require('axios')
 const extend = require('xtend')
@@ -12,6 +17,39 @@ class Swarm extends EventEmitter {
     this.id = cuid()
     this.peers = {}
     this.signalBuffer = {}
+
+    this.setupSignalServer()
+  }
+
+  setupSignalServer () {
+    const swarm = this
+
+    getPort().then(port => {
+      const signalServer = new SignalServer({ port: port })
+      signalServer.on('listen', () => {
+        bonjour.publish({
+          name: `sonoba-${swarm.id}`,
+          type: 'http',
+          port: port,
+          host: swarm.id
+        })
+      }).on('signal', (signal, host) => {
+        if (swarm.peers[host]) {
+          swarm.peers[host].signal(signal)
+        } else {
+          swarm.signalBuffer[host] = swarm.signalBuffer[host] || []
+          swarm.signalBuffer[host].push(signal)
+        }
+      })
+
+      const browser = bonjour.find({ type: 'http' })
+      browser.on('up', service => {
+        if ((/sonoba-/).test(service.name) && service.host !== swarm.id) {
+          console.log('found host:', service)
+          swarm.addPeer(service)
+        }
+      })
+    })
   }
 
   addPeer (service) {

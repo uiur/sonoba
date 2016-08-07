@@ -1,13 +1,8 @@
 'use strict'
 
-const getPort = require('get-port')
-const SignalServer = require('./signal-server')
-
-const bonjour = require('bonjour')()
-
 const linkText = require('link-text')
 const defaultUserName = require('./user-name')
-const Swarm = require('./swarm')
+const Swarm = require('./bonjour-swarm')
 
 const swarm = new Swarm()
 const React = require('react')
@@ -111,29 +106,9 @@ class Log extends React.Component {
   }
 }
 
-Promise.all([getPort(), defaultUserName()]).then(([port, name]) => {
+defaultUserName().then(name => {
   me.name = name
   me.id = swarm.id
-
-  const signalServer = new SignalServer({ port: port })
-  signalServer.on('listen', () => {
-    bonjour.publish({ name: `sonoba-${me.id}`, type: 'http', port: port, host: me.id })
-  }).on('signal', (signal, host) => {
-    if (swarm.peers[host]) {
-      swarm.peers[host].signal(signal)
-    } else {
-      swarm.signalBuffer[host] = swarm.signalBuffer[host] || []
-      swarm.signalBuffer[host].push(signal)
-    }
-  })
-
-  const browser = bonjour.find({ type: 'http' })
-  browser.on('up', service => {
-    if ((/sonoba-/).test(service.name) && service.host !== me.id) {
-      console.log('found host:', service)
-      swarm.addPeer(service)
-    }
-  })
 
   ReactDOM.render(
     React.createFactory(Log)(),
