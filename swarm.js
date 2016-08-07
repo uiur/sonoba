@@ -55,6 +55,8 @@ class Swarm extends EventEmitter {
     p.on('close', () => {
       console.log('connection closed: ' + service.host)
       delete this.peers[service.host]
+
+      this.emit('disconnect', service.host)
     })
   }
 
@@ -65,6 +67,10 @@ class Swarm extends EventEmitter {
         peer.send(JSON.stringify(message))
       }
     })
+  }
+
+  size () {
+    return Object.keys(this.peers).length
   }
 }
 

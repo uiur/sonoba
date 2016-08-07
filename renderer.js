@@ -35,6 +35,15 @@ function say (message) {
   swarm.broadcast(message)
 }
 
+function updateTitle (data) {
+  const peerCount = swarm.size()
+  document.title = `sonoba (${peerCount})`
+}
+
+updateTitle()
+swarm.on('connect', updateTitle)
+swarm.on('disconnect', updateTitle)
+
 class Log extends React.Component {
   constructor (props) {
     super(props)
@@ -48,7 +57,11 @@ class Log extends React.Component {
     })
 
     swarm.on('connect', peerId => {
-      this.append({ ts: Number(new Date()), text: `${peerId} joined` })
+      this.append({
+        ts: Number(new Date()),
+        username: 'sonoba',
+        text: `${peerId} joined`
+      })
     })
   }
 
