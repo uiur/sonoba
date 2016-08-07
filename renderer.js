@@ -5,6 +5,7 @@ const SignalServer = require('./signal-server')
 
 const bonjour = require('bonjour')()
 
+const linkText = require('link-text')
 const defaultUserName = require('./user-name')
 const Swarm = require('./swarm')
 
@@ -80,7 +81,10 @@ class Log extends React.Component {
         }, [
           React.DOM.img({ className: 'message-icon', src: message.icon_url }),
           React.DOM.div({ className: 'message-username' }, message.username),
-          React.DOM.div({ className: 'message-text' }, message.text)
+          React.DOM.div({
+            className: 'message-text',
+            dangerouslySetInnerHTML: { __html: linkText(message.text, { target: '_blank' }) }
+          })
         ])
       })),
       React.DOM.div({ className: 'message-form-container', key: 'form' },

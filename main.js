@@ -12,6 +12,11 @@ function createWindow () {
   mainWindow.on('closed', function () {
     mainWindow = null
   })
+
+  mainWindow.webContents.on('new-window', (event, url) => {
+    event.preventDefault()
+    electron.shell.openExternal(url)
+  })
 }
 
 app.on('ready', createWindow)
