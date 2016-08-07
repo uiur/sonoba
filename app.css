@@ -49,11 +49,21 @@ html, body {
   margin-bottom: 8px;
 }
 
-.message-username {
+.message-header {
   position: absolute;
   display: inline-block;
+}
+
+.message-username {
   font-size: 14px;
   font-weight: bold;
+}
+
+.message-time {
+  margin-left: 8px;
+  color: #999;
+  font-size: 12px;
+  font-weight: normal;
 }
 
 .message-icon {

@@ -106,6 +106,9 @@ class Log extends React.Component {
           this.messagesElement = element
         }
       }, this.state.messages.map(message => {
+        const date = new Date(message.ts)
+        const dateString = `${date.getHours()}:${date.getMinutes()}`
+
         return React.DOM.li({
           className: 'message',
           key: message.ts
@@ -116,9 +119,19 @@ class Log extends React.Component {
             key: 'icon'
           }),
           React.DOM.div({
-            className: 'message-username',
-            key: 'username'
-          }, message.username),
+            className: 'message-header',
+            key: 'header'
+          }, [
+            React.DOM.span({
+              className: 'message-username',
+              key: 'username'
+            }, message.username),
+            React.DOM.time({
+              className: 'message-time',
+              dateTime: new Date(message.ts).toISOString(),
+              key: 'time'
+            }, dateString)
+          ]),
           React.DOM.div({
             className: 'message-text',
             dangerouslySetInnerHTML: { __html: linkText(message.text, { target: '_blank' }) },
