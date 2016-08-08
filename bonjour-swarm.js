@@ -9,14 +9,15 @@ const extend = require('xtend')
 const EventEmitter = require('events')
 const ip = require('ip')
 const cuid = require('cuid')
-const defaultPeerOptions = { config: { iceServers: [] } }
 
 class Swarm extends EventEmitter {
-  constructor () {
+  constructor (options) {
+    options = options || {}
     super()
     this.id = cuid()
     this.peers = {}
     this.signalBuffer = {}
+    this.peerOption = { wrtc: options.wrtc, config: { iceServers: [] } }
 
     this.setupSignalServer()
   }
@@ -53,9 +54,9 @@ class Swarm extends EventEmitter {
   }
 
   addPeer (service) {
-    let peerOptions = defaultPeerOptions
+    let peerOptions = this.peerOption
     if (service.host < this.id) {
-      peerOptions = extend(defaultPeerOptions, { initiator: true })
+      peerOptions = extend(this.peerOption, { initiator: true })
     }
 
     const peerHost = service.addresses.find(ip.isV4Format)
