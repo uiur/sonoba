@@ -1,17 +1,26 @@
 html {
   box-sizing: border-box;
-  font-family: 'Helvetica Neue', Helvetica, Arial, 'Hiragino Kaku Gothic Pro', Meiryo, 'MS PGothic', sans-serif;
-}
-
-html, body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
+  font-family: 'Helvetica Neue', Helvetica, Arial, 'Hiragino Kaku Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
 }
 
 *, *:before, *:after {
   box-sizing: inherit;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  padding-top: 36px;
+}
+
+.title-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 36px;
 }
 
 .message-form-container {
@@ -22,59 +31,105 @@ html, body {
   left: 0;
   right: 0;
 
+  border-style: solid;
+  border-width: 1px 0 0 0;
+  border-color: #ccc;
+
   background: #fff;
 }
 
 .message-form {
-  width: 100%;
   display: inline-block;
-  font-size: 20px;
-  border-radius: 4px;
-  border: solid 2px #ccc;
+
+  width: 100%;
+  border: 0;
+  padding: 0;
+
+  font-size: 16px;
+  color: #333;
+  letter-spacing: 1.4px;
+
   outline: none;
-  padding: 8px;
 }
 
 .messages {
   list-style: none;
   padding: 10px 10px 0 10px;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 44px - 36px);
   overflow-y: scroll;
   margin: 0;
 }
 
 .message {
-  display: block;
   position: relative;
-  margin-bottom: 8px;
+  margin-bottom: 20px;
 }
 
 .message-header {
-  position: absolute;
-  display: inline-block;
+  margin-bottom: 6px;
+
+  font-size: 12px;
+  letter-spacing: 0.75px;
+  font-weight: 200;
+
+  color: #999;
 }
 
 .message-username {
-  font-size: 14px;
-  font-weight: bold;
+  display: inline-block;
+  margin-left: 48px;
 }
 
 .message-time {
-  margin-left: 8px;
-  color: #999;
-  font-size: 12px;
-  font-weight: normal;
+  position: absolute;
+  right: 0;
+}
+
+.message-icon, .message-text {
+  vertical-align: top;
 }
 
 .message-icon {
-  display: 'inline-block';
+  display: inline-block;
   width: 36px;
   height: 36px;
-  border-radius: 3px;
+  border-radius: 50%;
   margin-right: 10px;
 }
 
 .message-text {
   display: inline-block;
+  width: calc(100% - 46px);
   font-size: 14px;
+  color: #333;
+  letter-spacing: 1.4px;
+  line-height: 24px;
+
+  background-color: #f2f2f2;
+  border-radius: 18px;
+  padding: 6px 12px;
+}
+
+.message-system {
+  margin-bottom: 0;
+}
+
+.message-system-icon {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  margin-right: 10px;
+
+  border-radius: 50%;
+  border: 12px solid rgba(255,255,255,1);
+
+  background-color: #00aaff;
+}
+
+.message-text-system {
+  background-color: transparent;
+
+  font-size: 12px;
+  font-weight: 100;
+  color: #999999;
 }

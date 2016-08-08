@@ -10,7 +10,11 @@ let mainWindow
 function createWindow () {
   electron.Menu.setApplicationMenu(menu)
 
-  mainWindow = new BrowserWindow({width: 800, height: 600})
+  mainWindow = new BrowserWindow({
+    width: 600,
+    height: 600,
+    titleBarStyle: 'hidden-inset'
+  })
 
   mainWindow.loadURL(`file://${__dirname}/index.html`)
 

@@ -15,6 +15,8 @@ const swarm = new Swarm()
 const React = require('react')
 const ReactDOM = require('react-dom')
 const wifiName = require('wifi-name')
+const cx = require('classnames')
+const moment = require('moment')
 
 const logPath = path.join(electron.remote.app.getPath('userData'), 'log')
 const log = fs.createWriteStream(logPath, { flags: 'a' })
@@ -74,14 +76,16 @@ class Log extends React.Component {
 
     swarm.on('connect', peerId => {
       this.append({
+        type: 'system',
         username: 'sonoba',
         text: `${peerId} joined`
       })
     })
 
     this.append({
+      type: 'system',
       username: 'sonoba',
-      text: `network: ${me.wifiName}`
+      text: `Joined network ${me.wifiName}`
     })
   }
 
@@ -105,39 +109,15 @@ class Log extends React.Component {
         ref: element => {
           this.messagesElement = element
         }
-      }, this.state.messages.map(message => {
-        const date = new Date(message.ts)
-        const dateString = `${date.getHours()}:${date.getMinutes()}`
+      }, this.state.messages.filter((message, index) => {
+        const prevMessage = this.state.messages[index - 1]
+        if (!prevMessage) return true
 
-        return React.DOM.li({
-          className: 'message',
-          key: message.ts
-        }, [
-          React.DOM.img({
-            className: 'message-icon',
-            src: message.icon_url,
-            key: 'icon'
-          }),
-          React.DOM.div({
-            className: 'message-header',
-            key: 'header'
-          }, [
-            React.DOM.span({
-              className: 'message-username',
-              key: 'username'
-            }, message.username),
-            React.DOM.time({
-              className: 'message-time',
-              dateTime: new Date(message.ts).toISOString(),
-              key: 'time'
-            }, dateString)
-          ]),
-          React.DOM.div({
-            className: 'message-text',
-            dangerouslySetInnerHTML: { __html: linkText(message.text, { target: '_blank' }) },
-            key: 'text'
-          })
-        ])
+        const duplicated = prevMessage.type === 'system' && prevMessage.text === message.text
+
+        return !duplicated
+      }).map(message => {
+        return Message({ message: message })
       })),
       React.DOM.div({ className: 'message-form-container', key: 'form' },
         React.DOM.input({
@@ -161,6 +141,60 @@ class Log extends React.Component {
       )
     ])
   }
+}
+
+function Message ({ message }) {
+  const dateString = moment(message.ts).format('LT')
+
+  const isSystem = message.type === 'system'
+
+  let children = []
+  if (isSystem) {
+    children.push(
+      React.DOM.div({
+        className: 'message-system-icon',
+        key: 'icon'
+      })
+    )
+  } else {
+    children.push(
+      React.DOM.div({
+        className: 'message-header',
+        key: 'header'
+      }, [
+        React.DOM.span({
+          className: 'message-username',
+          key: 'username'
+        }, message.username),
+        React.DOM.time({
+          className: 'message-time',
+          dateTime: new Date(message.ts).toISOString(),
+          key: 'time'
+        }, dateString)
+      ])
+    )
+
+    children.push(
+      React.DOM.img({
+        className: 'message-icon',
+        src: message.icon_url,
+        key: 'icon'
+      })
+    )
+  }
+
+  children.push(
+    React.DOM.div({
+      className: cx('message-text', { 'message-text-system': isSystem }),
+      dangerouslySetInnerHTML: { __html: linkText(message.text, { target: '_blank' }) },
+      key: 'text'
+    })
+  )
+
+  return React.DOM.li({
+    className: cx('message', { 'message-system': isSystem }),
+    key: message.ts
+  }, children)
 }
 
 Promise.all([defaultUserName(), wifiName()]).then(([username, wifi]) => {
