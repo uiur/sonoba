@@ -21,6 +21,9 @@ body {
   left: 0;
   width: 100%;
   height: 36px;
+
+  -webkit-user-select: none;
+  -webkit-app-region: drag;
 }
 
 .message-form-container {
@@ -66,7 +69,7 @@ body {
 }
 
 .message-header {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 
   font-size: 12px;
   letter-spacing: 0.75px;
