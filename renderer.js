@@ -4,28 +4,17 @@ const electron = require('electron')
 
 const linkText = require('link-text')
 const defaultUserName = require('./user-name')
-const Swarm = require('./bonjour-swarm')
 
-const fs = require('fs')
-const path = require('path')
-const concat = require('concat-stream')
-const JSONStream = require('JSONStream')
-
-const swarm = new Swarm()
 const React = require('react')
 const ReactDOM = require('react-dom')
 const wifiName = require('wifi-name')
 const cx = require('classnames')
 const moment = require('moment')
+const pull = require('pull-stream')
+const toPull = require('stream-to-pull-stream')
+const got = require('got')
 
-const logPath = path.join(electron.remote.app.getPath('userData'), 'log')
-const log = fs.createWriteStream(logPath, { flags: 'a' })
-
-const me = {
-  email: require('git-user-email')()
-}
-
-me.icon_url = require('gravatar').url(me.email, { protocol: 'https', size: 100 })
+const sbot = electron.remote.getGlobal('sbot')
 
 // the message format is almost same as Slack
 // {
@@ -36,51 +25,86 @@ me.icon_url = require('gravatar').url(me.email, { protocol: 'https', size: 100 }
 //   ts: '1358878755'
 // }
 function say (message) {
-  message.ts = Date.now()
   message.user = me.id
   message.username = me.name
   message.icon_url = me.icon_url
 
-  swarm.broadcast(message)
+  sbot.publish({ type: 'post', text: message.text }, (err, msg) => {
+    if (err) console.error(err)
+    console.log(msg)
+  })
 }
 
-function updateTitle (data) {
-  const peerCount = swarm.size()
-  document.title = `sonoba (${peerCount})`
-}
+// function updateTitle (data) {
+//   const peerCount = swarm.size()
+//   document.title = `sonoba (${peerCount})`
+// }
 
-updateTitle()
-swarm.on('connect', updateTitle)
-swarm.on('disconnect', updateTitle)
+// updateTitle()
+// swarm.on('connect', updateTitle)
+// swarm.on('disconnect', updateTitle)
 
 class Log extends React.Component {
   constructor (props) {
     super(props)
-    this.state = { messages: [], input: '' }
+    this.state = {
+      messages: [],
+      input: '',
+      profiles: {}
+    }
   }
 
   componentDidMount () {
-    fs.createReadStream(logPath)
-      .pipe(JSONStream.parse())
-      .pipe(concat(data => {
-        this.setState({ messages: data })
-        this.setupSwarm()
-      }))
-  }
+    pull(
+      sbot.createFeedStream({ live: true }),
+      pull.drain(data => {
+        const { value } = data
+        const { messages, profiles } = this.state
 
-  setupSwarm () {
-    swarm.on('message', message => {
-      console.log(message)
-      this.append(message)
-    })
+        if (!(value && value.content)) return
 
-    swarm.on('connect', peerId => {
-      this.append({
-        type: 'system',
-        username: 'sonoba',
-        text: `${peerId} joined`
+        if (value.content.type === 'about') {
+          if (value.author !== value.content.about) return
+
+          profiles[value.author] = profiles[value.author] || {}
+
+          if (value.content.name) {
+            profiles[value.author].name = value.content.name
+          }
+
+          if (value.content.image) {
+            let image = profiles[value.author].image = value.content.image
+
+            pull(
+              sbot.blobs.get(image.link),
+              pull.collect((err, values) => {
+                if (err) throw err
+
+                const blob = new window.Blob(values)
+                const icon = window.URL.createObjectURL(blob)
+                profiles[value.author].icon = icon
+
+                this.updateMessages(profiles)
+              })
+            )
+          }
+
+          this.updateMessages(profiles)
+        }
+
+        if (value.content.type === 'post') {
+          const profile = profiles[value.author]
+          this.append({
+            author: value.author,
+            profile: profile,
+            username: profile && profile.name,
+            icon: profile && profile.icon,
+            ts: value.timestamp,
+            text: value.content.text
+          })
+        }
       })
-    })
+    )
 
     this.append({
       type: 'system',
@@ -89,12 +113,25 @@ class Log extends React.Component {
     })
   }
 
+  updateMessages (profiles) {
+    const { messages } = this.state
+
+    messages.forEach(message => {
+      const profile = message.profile = profiles[message.author]
+      if (profile) {
+        message.username = profile.name
+        message.icon = profile.icon
+      }
+    })
+
+    this.setState({ messages: messages, profiles: profiles })
+  }
+
   append (message) {
     message.ts = message.ts || Date.now()
 
     const { messages } = this.state
     messages.push(message)
-    log.write(JSON.stringify(message) + '\n')
 
     this.setState({ messages: messages }, () => {
       this.messagesElement.scrollTop = this.messagesElement.scrollHeight
@@ -117,7 +154,9 @@ class Log extends React.Component {
 
         return !duplicated
       }).map(message => {
-        return Message({ message: message })
+        return Message({
+          message: message
+        })
       })),
       React.DOM.div({ className: 'message-form-container', key: 'form' },
         React.DOM.input({
@@ -132,7 +171,6 @@ class Log extends React.Component {
             if (e.key === 'Enter') {
               const message = { text: e.target.value }
               say(message)
-              this.append(message)
 
               this.setState({ input: '' })
             }
@@ -165,7 +203,7 @@ function Message ({ message }) {
         React.DOM.span({
           className: 'message-username',
           key: 'username'
-        }, message.username),
+        }, message.username || message.author),
         React.DOM.time({
           className: 'message-time',
           dateTime: new Date(message.ts).toISOString(),
@@ -177,7 +215,7 @@ function Message ({ message }) {
     children.push(
       React.DOM.img({
         className: 'message-icon',
-        src: message.icon_url,
+        src: message.icon,
         key: 'icon'
       })
     )
@@ -197,10 +235,72 @@ function Message ({ message }) {
   }, children)
 }
 
+function getProfile (id, cb) {
+  let profile = {}
+
+  pull(
+    sbot.links({ source: id, dest: id, rel: 'about', values: true }),
+    pull.collect((err, abouts) => {
+      if (err) return cb(err)
+
+      abouts.forEach(({ value }) => {
+        if (value.content.name) {
+          profile.name = value.content.name
+        }
+      })
+
+      cb(null, profile)
+    })
+  )
+}
+
+const me = {
+  email: require('git-user-email')()
+}
+
+
 Promise.all([defaultUserName(), wifiName()]).then(([username, wifi]) => {
   me.name = username
-  me.id = swarm.id
+  me.id = sbot.whoami().id
   me.wifiName = wifi
+
+  getProfile(me.id, (err, profile) => {
+    if (err) throw err
+
+    if (!profile.name) {
+      sbot.publish({
+        type: 'about',
+        name: username,
+        about: me.id
+      }, err => {
+        if (err) throw err
+      })
+    }
+
+    if (!profile.image) {
+      const size = 100
+      const iconUrl = require('gravatar').url(me.email, { protocol: 'https', size: size })
+
+      pull(
+        toPull.source(got.stream(iconUrl)),
+        sbot.blobs.add((err, hash) => {
+          if (err) console.error(err)
+
+          sbot.publish({
+            type: 'about',
+            about: me.id,
+            image: {
+              link: hash,
+              width: size,
+              height: size
+            }
+          }, err => {
+            if (err) throw err
+          })
+        })
+      )
+    }
+  })
 
   ReactDOM.render(
     React.createFactory(Log)(),

@@ -5,6 +5,8 @@ const menu = require('./menu')
 
 require('electron-context-menu')()
 
+global.sbot = require('./sbot')()
+
 let mainWindow
 
 function createWindow () {
