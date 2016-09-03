@@ -2,15 +2,12 @@ const electron = require('electron')
 const app = electron.app
 const BrowserWindow = electron.BrowserWindow
 const menu = require('./menu')
-const getPort = require('get-port')
 
 require('electron-context-menu')()
 
-const sbotIsReady = getPort().then(port => {
-  global.sbot = require('./sbot')({
-    port: port // avoid port conflict with the main scuttlebot
-  })
-}).catch(console.error.bind(console))
+global.sbot = require('./sbot')({
+  port: 8019 // avoid port conflict with the main scuttlebot
+})
 
 let mainWindow
 
@@ -35,7 +32,7 @@ function createWindow () {
   })
 }
 
-app.on('ready', () => sbotIsReady.then(createWindow))
+app.on('ready', createWindow)
 
 app.on('window-all-closed', function () {
   app.quit()

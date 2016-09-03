@@ -1,3 +1,4 @@
+const electron = require('electron')
 var fs = require('fs')
 var path = require('path')
 var ssbKeys = require('ssb-keys')
@@ -7,7 +8,8 @@ var config = require('ssb-config/inject')(
   process.env.ssb_appname,
   { logging: { level: 'info' } }
 )
-config.path = path.join(__dirname, process.env.DIR || '/.snb')
+
+config.path = (process.env.DIR && path.join(__dirname, process.env.DIR)) || electron.app.getPath('appData')
 
 module.exports = opts => {
   var keys = ssbKeys.loadOrCreateSync(path.join(config.path, 'secret'))
