@@ -1,12 +1,15 @@
-var fs           = require('fs')
-var path         = require('path')
-var ssbKeys      = require('ssb-keys')
-var pull = require('pull-stream')
+var fs = require('fs')
+var path = require('path')
+var ssbKeys = require('ssb-keys')
+var extend = require('xtend')
 
-var config  = require('ssb-config/inject')(process.env.ssb_appname, { logging: { level: 'info' }})
-config.path = __dirname + '/.snb'
+var config = require('ssb-config/inject')(
+  process.env.ssb_appname,
+  { logging: { level: 'info' } }
+)
+config.path = path.join(__dirname, process.env.DIR || '/.snb')
 
-module.exports = () => {
+module.exports = opts => {
   var keys = ssbKeys.loadOrCreateSync(path.join(config.path, 'secret'))
 
   var manifestFile = path.join(config.path, 'manifest.json')
@@ -24,7 +27,13 @@ module.exports = () => {
     .use(require('scuttlebot/plugins/logging'))
     .use(require('scuttlebot/plugins/private'))
 
-  config.keys = keys
+  config = extend(config, {
+    keys: keys,
+    appKey: new Buffer('xaZv2HJjzKX72xsLiEt8Ozsfx9rhii5xZfyDgyDyHG0=', 'base64')
+  })
+
+  config = extend(config, opts)
+
   var sbot = createSbot(config)
   fs.writeFileSync(manifestFile, JSON.stringify(sbot.getManifest(), null, 2))
 

@@ -19,6 +19,7 @@
     "electron-context-menu": "^0.4.0",
     "express": "^4.14.0",
     "fullname": "^3.1.0",
+    "get-port": "^2.1.0",
     "git-user-email": "^0.2.1",
     "git-user-name": "^1.2.0",
     "got": "^6.3.0",
